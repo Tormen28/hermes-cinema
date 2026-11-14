@@ -285,7 +285,7 @@ def _run_ffmpeg(tools: worker.Tools, args: list[str], *, workdir: Path, timeout:
             capture_output=True,
             text=True,
             timeout=timeout,
-            creationflags=CREATE_NO_WINDOW,
+            creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     except subprocess.TimeoutExpired:
         raise GenerationError(f"ffmpeg excedió {timeout:g}s generando el asset") from None
@@ -494,7 +494,7 @@ def _edge_python() -> list[str] | None:
         try:
             result = subprocess.run(
                 [*command, "-c", "import edge_tts"], capture_output=True, timeout=20,
-                creationflags=CREATE_NO_WINDOW,
+                creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
             )
         except (OSError, subprocess.TimeoutExpired):
             continue
@@ -535,7 +535,7 @@ def generate_local_voice(
     try:
         result = subprocess.run(
             command, cwd=str(job_dir), env=_speech_env(), capture_output=True, text=True,
-            timeout=120, creationflags=CREATE_NO_WINDOW,
+            timeout=120, creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     except subprocess.TimeoutExpired:
         raise GenerationError("la voz local tardó más de 120 s") from None
@@ -566,7 +566,7 @@ def generate_edge_voice(
     try:
         result = subprocess.run(
             command, cwd=str(job_dir), env=_speech_env(), capture_output=True, text=True,
-            timeout=90, creationflags=CREATE_NO_WINDOW,
+            timeout=90, creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     except subprocess.TimeoutExpired:
         raise GenerationError("edge-tts no respondió en 90 s (¿sin internet?)") from None

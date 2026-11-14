@@ -77,8 +77,8 @@ const STRINGS = {
     'titlebar.close': 'Close video editor',
     'titlebar.label': 'Video',
     'error.offline': 'offline',
-    'error.token_rejected': 'The service does not accept this editor token. Run activar-editor.cmd to pair them again.',
-    'error.token_missing': 'This editor has no service token. Run activar-editor.cmd (or instalar.py) and reload the plugin.',
+    'error.token_rejected': 'The service does not accept this editor token. Run `hermes cinema pair` and reload the pane.',
+    'error.token_missing': 'This editor has no service token yet. Run `hermes cinema pair` and reload the pane.',
     'cine.name_invalid': 'Name it with lowercase letters, digits and hyphens.',
     'cine.aria': 'Cine · cinematic-film',
     'cine.title': 'Cine',
@@ -505,8 +505,8 @@ const STRINGS = {
     'titlebar.close': 'Cerrar editor de vídeo',
     'titlebar.label': 'Vídeo',
     'error.offline': 'sin conexión',
-    'error.token_rejected': 'El servicio no acepta el token de este editor. Ejecuta activar-editor.cmd para volver a emparejarlos.',
-    'error.token_missing': 'Este editor no tiene el token del servicio. Ejecuta activar-editor.cmd (o instalar.py) y recarga el plugin.',
+    'error.token_rejected': 'El servicio no acepta el token de este editor. Ejecuta `hermes cinema pair` y recarga el panel.',
+    'error.token_missing': 'Este editor todavia no tiene el token del servicio. Ejecuta `hermes cinema pair` y recarga el panel.',
     'cine.name_invalid': 'Ponle un nombre: minúsculas, números y guiones.',
     'cine.aria': 'Cine · cinematic-film',
     'cine.title': 'Cine',
@@ -1372,11 +1372,10 @@ const stateAtom = (name, fallback) =>
   (host && host.state && host.state[name]) || staticAtom(fallback)
 
 function serviceToken(ctx) {
-  const fromWindow = typeof window !== 'undefined' && window.__VE_TOKEN__ ? window.__VE_TOKEN__ : ''
   const fromStorage =
     ctx && ctx.storage && typeof ctx.storage.get === 'function' ? ctx.storage.get('service.token') : ''
   const embedded = SERVICE_TOKEN.startsWith('__VE_') ? '' : SERVICE_TOKEN
-  return String(fromWindow || fromStorage || embedded || '')
+  return String(fromStorage || embedded || '')
 }
 
 // Pairing with the agent half: the token lives in plugin-data and is handed over
@@ -1448,9 +1447,7 @@ async function request(ctx, path, { method = 'GET', body, timeout = 30000 } = {}
 
 function serviceBase(ctx) {
   const override =
-    typeof window !== 'undefined' && window.__VE_SERVICE__
-      ? window.__VE_SERVICE__
-      : ctx && ctx.storage && typeof ctx.storage.get === 'function' && ctx.storage.get('service.url')
+    ctx && ctx.storage && typeof ctx.storage.get === 'function' ? ctx.storage.get('service.url') : ''
   return String(override || DEFAULT_SERVICE).replace(/\/+$/, '')
 }
 

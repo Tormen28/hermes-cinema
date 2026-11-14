@@ -17,6 +17,7 @@ split_takes.py then cuts it into lines. Writes audio/takes/<take>.wav.
 import argparse
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -56,6 +57,10 @@ def main():
         tmp = pathlib.Path(tmp)
         for take in script["takes"]:
             name = take["take"]
+            # El nombre viene del script.json del proyecto: se valida antes de
+            # meterlo en una ruta o en el comando de voz (que corre por shell).
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", str(name)):
+                sys.exit(f"take name {name!r} is not a safe identifier: [A-Za-z0-9][A-Za-z0-9_-]*, max 64")
             if only and name not in only:
                 continue
             lines = [l["spoken"].strip() for l in take["lines"]]

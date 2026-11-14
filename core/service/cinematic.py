@@ -30,9 +30,17 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
+
+from service.worker import CREATE_NO_WINDOW, filtered_env
+
+#: Los hijos no heredan el entorno de Hermes. TEMP/TMP van aqui, fuera del
+#: proyecto: `filtered_env` crea `<dir>/tmp` dentro, y eso dejaba la carpeta
+#: del proyecto no vacia antes de que new_project.py la andamiara.
+_TMP_HIJOS = Path(tempfile.mkdtemp(prefix="ve-cine-hijos-"))
 
 # ``core/service/cinematic.py`` -> ``core/cinematic``
 HERE = Path(__file__).resolve().parent
@@ -154,6 +162,8 @@ def crear_proyecto(base: Path, nombre: str, titulo: str, piel: str | None = None
         capture_output=True,
         text=True,
         timeout=120,
+        env=filtered_env(_TMP_HIJOS),
+        creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
     if resultado.returncode != 0:
         raise RuntimeError(
@@ -225,7 +235,14 @@ def estado(carpeta: Path) -> dict:
 
 def _correr_etapa(carpeta: Path, script: str, extra: tuple[str, ...]) -> None:
     comando = [_python(), str(SCRIPTS / script), "--project", str(carpeta), *extra]
-    resultado = subprocess.run(comando, capture_output=True, text=True, timeout=3600)
+    resultado = subprocess.run(
+        comando,
+        capture_output=True,
+        text=True,
+        timeout=3600,
+        env=filtered_env(_TMP_HIJOS),
+        creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
+    )
     if resultado.returncode != 0:
         detalle = (resultado.stderr or resultado.stdout or "").strip()
         raise RuntimeError(f"{script}: {detalle[-600:]}")
@@ -255,6 +272,8 @@ def _unir(carpeta: Path) -> None:
             str(destino),
         ],
         capture_output=True, text=True, timeout=1800,
+        env=filtered_env(_TMP_HIJOS),
+        creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
     if resultado.returncode != 0:
         raise RuntimeError(f"no se pudo unir imagen y audio: {(resultado.stderr or '')[-400:]}")

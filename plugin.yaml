@@ -1,13 +1,42 @@
 name: hermes-cinema
 label: Video Editor
 kind: standalone
-version: 0.3.5
+version: 0.3.6
 author: "Tormen28"
 license: MIT
 requires_hermes: ">=0.23.0"
 manifest_version: 2
 provides_tools: [cinema_status, cinema_start]
 provides_hooks: []
+#: Proveedores externos: OPCIONALES. Sin ninguna clave el editor funciona entero
+#: (generador local de imagen y voz del sistema) y no hace una sola llamada de red.
+#: Se leen por el ambito del perfil activo, nunca por os.environ crudo, y viajan
+#: al servicio en un entorno minimo: FFmpeg y los scripts del skill no los ven.
+optional_env:
+  - name: VE_GEMINI_KEY
+    description: "Optional. Gemini key for AI-generated stills. Unset = local generator, no network call."
+    secret: true
+  - name: VE_ELEVEN_KEY
+    description: "Optional. ElevenLabs key for AI voice. Unset = the system voice (SAPI, say, espeak-ng)."
+    secret: true
+  - name: VE_PROVIDER_IMAGE_KEY
+    description: "Optional. Bearer key for a custom image provider (VE_PROVIDER_IMAGE_URL)."
+    secret: true
+  - name: VE_PROVIDER_IMAGE_URL
+    description: "Optional. HTTPS endpoint of a custom image provider."
+    secret: false
+  - name: VE_PROVIDER_MUSIC_KEY
+    description: "Optional. Bearer key for a custom music provider."
+    secret: true
+  - name: VE_PROVIDER_MUSIC_URL
+    description: "Optional. HTTPS endpoint of a custom music provider."
+    secret: false
+  - name: VE_PROVIDER_VOICE_KEY
+    description: "Optional. Bearer key for a custom voice provider."
+    secret: true
+  - name: VE_PROVIDER_VOICE_URL
+    description: "Optional. HTTPS endpoint of a custom voice provider."
+    secret: false
 homepage: "https://github.com/Tormen28/hermes-cinema"
 description: >
   A Hermes Desktop pane that edits and exports real video on your own machine:

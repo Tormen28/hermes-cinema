@@ -100,6 +100,62 @@ def health(port: int | None = None, timeout: float = HEALTH_TIMEOUT_S) -> dict |
         return None
 
 
+# --- entorno de los hijos -----------------------------------------------------
+# El servicio NO hereda el entorno de Hermes: si lo hiciera, cada clave de
+# proveedor del perfil (y de los demas perfiles) acabaria dentro de FFmpeg, del
+# comando de voz y de los scripts vendoreados del skill.
+
+#: Lo unico que un hijo necesita para arrancar en cualquier plataforma.
+ENV_BASE = (
+    "PATH", "PATHEXT", "SystemRoot", "SYSTEMROOT", "windir", "ComSpec",
+    "TEMP", "TMP", "TMPDIR", "HOME", "USERPROFILE", "LANG", "LC_ALL",
+)
+
+#: Claves de proveedor: opcionales, y solo viajan si la persona las tiene puestas.
+ENV_PROVEEDORES = (
+    "VE_GEMINI_KEY",
+    "VE_ELEVEN_KEY",
+    "VE_PROVIDER_IMAGE_KEY",
+    "VE_PROVIDER_IMAGE_URL",
+    "VE_PROVIDER_MUSIC_KEY",
+    "VE_PROVIDER_MUSIC_URL",
+    "VE_PROVIDER_VOICE_KEY",
+    "VE_PROVIDER_VOICE_URL",
+)
+
+
+def _get_secret(nombre: str) -> str:
+    """Lee una clave por el ambito del perfil activo, nunca por os.environ crudo.
+
+    `agent.secret_scope.get_secret` honra el perfil con multiplexacion activa y
+    falla cerrado cuando no hay ambito; aqui se tolera su ausencia (plugin
+    cargado fuera de un agente) devolviendo vacio en vez de reventar.
+    """
+    try:
+        from agent.secret_scope import get_secret  # noqa: PLC0415 - opcional a proposito
+    except Exception:  # noqa: BLE001 - sin agente no hay ambito, y no es un error
+        return ""
+    try:
+        valor = get_secret(nombre, "")
+    except Exception:  # noqa: BLE001 - UnscopedSecretError: se trata como no configurada
+        return ""
+    return (valor or "").strip()
+
+
+def child_env() -> dict[str, str]:
+    """Entorno minimo para el lanzador y sus nietos."""
+    env: dict[str, str] = {}
+    for nombre in ENV_BASE:
+        valor = os.environ.get(nombre)
+        if valor:
+            env[nombre] = valor
+    for nombre in ENV_PROVEEDORES:
+        valor = _get_secret(nombre)
+        if valor:
+            env[nombre] = valor
+    return env
+
+
 def start(port: int | None = None) -> dict:
     cfg = _config()
     port = int(port or cfg["port"])
@@ -115,7 +171,8 @@ def start(port: int | None = None) -> dict:
            "--port", str(port),
            "--token-file", str(token_path())]
     try:
-        out = subprocess.run(cmd, cwd=str(CORE), capture_output=True, text=True, timeout=90)
+        out = subprocess.run(cmd, cwd=str(CORE), capture_output=True, text=True, timeout=90,
+                             env=child_env())
     except (OSError, subprocess.SubprocessError) as exc:
         return {"ok": False, "error": f"launcher failed: {exc}"}
     if out.returncode != 0:
@@ -131,7 +188,8 @@ def stop(port: int | None = None) -> dict:
     cmd = [sys.executable, str(LAUNCHER), "--stop", "--port", str(port),
            "--token-file", str(token_path())]
     try:
-        out = subprocess.run(cmd, cwd=str(CORE), capture_output=True, text=True, timeout=30)
+        out = subprocess.run(cmd, cwd=str(CORE), capture_output=True, text=True, timeout=30,
+                             env=child_env())
     except (OSError, subprocess.SubprocessError) as exc:
         return {"ok": False, "error": f"stop failed: {exc}"}
     return {"ok": out.returncode == 0, "port": port, "detail": (out.stdout or "").strip()[-200:]}

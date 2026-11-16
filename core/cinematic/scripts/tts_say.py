@@ -10,25 +10,60 @@ and spoken words, never fixed seconds.
   python3 tts_say.py --project my-film --voice Daniel --rate 165
   python3 tts_say.py --project my-film --cmd 'piper -m en_US-lessac-medium.onnx -f {out} < {txt}'
 
---cmd runs any command-line TTS once per take: {txt} is a text file with the take's lines (one per
-paragraph), {out} the WAV it must write. Each take is read in one go so the delivery stays even;
+--cmd runs any command-line TTS once per take, as an argv list and never through a shell (a
+trailing `< {txt}` feeds the text on stdin; pipes and `>` are not supported). {txt} is a text file
+with the take's lines (one per paragraph), {out} the WAV it must write. Each take is read in one go so the delivery stays even;
 split_takes.py then cuts it into lines. Writes audio/takes/<take>.wav.
 """
 import argparse
 import json
+import os
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
 
 
-def run(cmd, shell=False):
-    r = subprocess.run(cmd, capture_output=True, text=True, shell=shell)
+def run(cmd, stdin_path=None):
+    """Run an argv list (never through a shell). `stdin_path` feeds a file to the command."""
+    stdin = open(stdin_path, "rb") if stdin_path else None
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, stdin=stdin)
+    finally:
+        if stdin:
+            stdin.close()
     if r.returncode != 0:
-        sys.exit(f"FAILED: {cmd if shell else ' '.join(map(str, cmd))}\n{r.stderr[-1500:]}")
+        sys.exit(f"FAILED: {' '.join(map(str, cmd))}\n{r.stderr[-1500:]}")
     return r.stdout
+
+
+def build_argv(template, txt, out, posix=None):
+    """Turn a --cmd template into (argv, stdin_path) without a shell.
+
+    The template is split into words first and {txt}/{out} are substituted into each word
+    afterwards, so a path with spaces or shell characters stays one argument and nothing is
+    ever interpreted by a shell. A trailing `< {txt}` is honoured as stdin redirection (the one
+    shell feature the examples use); pipes, `>` and `&&` are not supported: wrap them in a script.
+    """
+    posix = (os.name != "nt") if posix is None else posix
+    words = shlex.split(template, posix=posix)
+    if not posix:  # the non-POSIX split keeps the quotes around a quoted word and the backslashes
+        words = [w[1:-1] if len(w) >= 2 and w[0] == w[-1] and w[0] in "\"'" else w for w in words]
+    argv, stdin_path, i = [], None, 0
+    while i < len(words):
+        w = words[i]
+        if w == "<" and i + 1 < len(words):
+            stdin_path = words[i + 1].replace("{txt}", str(txt)).replace("{out}", str(out))
+            i += 2
+            continue
+        argv.append(w.replace("{txt}", str(txt)).replace("{out}", str(out)))
+        i += 1
+    if not argv:
+        sys.exit("--cmd is empty")
+    return argv, stdin_path
 
 
 def to_wav(src, dst):
@@ -78,7 +113,8 @@ def main():
             else:
                 txt = tmp / f"{name}.txt"; txt.write_text("\n\n".join(lines) + "\n")
                 raw = tmp / f"{name}_raw.wav"
-                run(a.cmd.format(txt=str(txt), out=str(raw)), shell=True)
+                argv, stdin_path = build_argv(a.cmd, txt, raw)
+                run(argv, stdin_path=stdin_path)
                 to_wav(raw, out)
             dur = float(run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(out)]))
             print(f"{name:<20} {len(lines)} lines  {dur:5.1f}s  -> {out}")

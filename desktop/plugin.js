@@ -459,6 +459,39 @@ const STRINGS = {
     'menu.guides_toggle': '{action} safe-zone guides',
     'export.progress': 'Exporting… {percent} %',
     'export.progress_bare': 'Exporting {percent} %',
+    // --- barrido de textos pendientes (ronda 2)
+    'time.now': 'now',
+    'time.s_ago': '{n} s ago',
+    'time.min_ago': '{n} min ago',
+    'time.h_ago': '{n} h ago',
+    'cine.item_done': 'done',
+    'cine.item_none': 'no render',
+    'cine.error_line': 'Error: {error}',
+    'cine.done_line': 'Done',
+    'cine.done_in': 'Done in {seconds} s',
+    'import.folder_mismatch': 'That folder is not the one the service has granted. Grant and use: {path}',
+    'import.list_failed': 'Couldn\'t list the folder',
+    'picker.no_project': 'No project is open.',
+    'header.model_aria': 'Model {model}. Change the model in the chat selector',
+    'preview.aria': 'Preview of {name}',
+    'transport.position_value': '{cursor} of {total}',
+    'timeline.sound_title': 'Sound {n} · {time} · volume {volume}%',
+    'timeline.sound_aria': 'Sound {n} at {time}',
+    'timeline.muted': 'muted',
+    'timeline.missing_badge': 'missing',
+    'sfx.row': 'Sound {n}',
+    'sfx.file_aria': 'Sound {n} file',
+    'sfx.start_aria': 'Sound {n} start',
+    'music.plays': 'Plays in the background for {time}.',
+    'chat.copy_failed': 'Couldn\'t copy: {error}',
+    'notice.imported_partial': '{done} of {total} file(s) imported.',
+    'export.preset_unavailable': '{label} · unavailable',
+    'export.path_unavailable': 'path unavailable',
+    'import.entries_hint': '{count} supported files · only what you tick is imported',
+    'import.progress': '{done} of {total}',
+    'import.done_summary': '{done} of {total} imported{failed}',
+    'import.failed_part': ' · {count} with errors',
+    'service.http_error': 'HTTP {status}',
   },
   es: {
     'orientation.horizontal': 'Horizontal',
@@ -887,6 +920,39 @@ const STRINGS = {
     'menu.guides_toggle': '{action} guías de zona segura',
     'export.progress': 'Exportando… {percent} %',
     'export.progress_bare': 'Exportando {percent} %',
+    // --- barrido de textos pendientes (ronda 2)
+    'time.now': 'ahora',
+    'time.s_ago': 'hace {n} s',
+    'time.min_ago': 'hace {n} min',
+    'time.h_ago': 'hace {n} h',
+    'cine.item_done': 'lista',
+    'cine.item_none': 'sin render',
+    'cine.error_line': 'Error: {error}',
+    'cine.done_line': 'Lista',
+    'cine.done_in': 'Lista en {seconds} s',
+    'import.folder_mismatch': 'Esa carpeta no es la que el servicio tiene concedida. Concede y usa: {path}',
+    'import.list_failed': 'No se pudo listar la carpeta',
+    'picker.no_project': 'No hay proyecto abierto.',
+    'header.model_aria': 'Modelo {model}. Cambia el modelo en el selector del chat',
+    'preview.aria': 'Vista previa de {name}',
+    'transport.position_value': '{cursor} de {total}',
+    'timeline.sound_title': 'Sonido {n} · {time} · volumen {volume}%',
+    'timeline.sound_aria': 'Sonido {n} en {time}',
+    'timeline.muted': 'mudo',
+    'timeline.missing_badge': 'falta',
+    'sfx.row': 'Sonido {n}',
+    'sfx.file_aria': 'Archivo del sonido {n}',
+    'sfx.start_aria': 'Inicio del sonido {n}',
+    'music.plays': 'Suena de fondo durante {time}.',
+    'chat.copy_failed': 'No se pudo copiar: {error}',
+    'notice.imported_partial': '{done} de {total} archivo(s) importados.',
+    'export.preset_unavailable': '{label} · no disponible',
+    'export.path_unavailable': 'ruta no disponible',
+    'import.entries_hint': '{count} archivos admitidos · solo se importa lo que marques',
+    'import.progress': '{done} de {total}',
+    'import.done_summary': '{done} de {total} importados{failed}',
+    'import.failed_part': ' · {count} con error',
+    'service.http_error': 'HTTP {status}',
   }
 }
 
@@ -1081,11 +1147,11 @@ function fmtBytes(bytes) {
 function relativeTime(ms) {
   if (!ms) return ''
   const diff = Math.max(0, Math.round((Date.now() - ms) / 1000))
-  if (diff < 5) return 'ahora'
-  if (diff < 60) return `hace ${diff} s`
+  if (diff < 5) return t('time.now')
+  if (diff < 60) return t('time.s_ago', { n: diff })
   const minutes = Math.round(diff / 60)
-  if (minutes < 60) return `hace ${minutes} min`
-  return `hace ${Math.round(minutes / 60)} h`
+  if (minutes < 60) return t('time.min_ago', { n: minutes })
+  return t('time.h_ago', { n: Math.round(minutes / 60) })
 }
 
 function sceneDuration(scene) {
@@ -1437,7 +1503,7 @@ async function request(ctx, path, { method = 'GET', body, timeout = 30000 } = {}
           ? t('error.token_rejected')
           : t('error.token_missing')
         : null
-    const failure = new Error(authHint || (payload && (payload.error || (payload.errors || []).join(' · '))) || `HTTP ${response.status}`)
+    const failure = new Error(authHint || (payload && (payload.error || (payload.errors || []).join(' · '))) || t('service.http_error', { status: response.status }))
     failure.status = response.status
     failure.payload = payload
     throw failure
@@ -2203,7 +2269,7 @@ function CinePanel({ ctx, onClose }) {
                             h(
                               'span',
                               { className: 've-cine__item-s' },
-                              p.terminado ? 'lista' : p.corriendo ? `${p.etapa || 'render'} · ${p.porcentaje || 0}%` : 'sin render'
+                              p.terminado ? t('cine.item_done') : p.corriendo ? `${p.etapa || 'render'} · ${p.porcentaje || 0}%` : t('cine.item_none')
                             )
                           )
                         )
@@ -2264,9 +2330,9 @@ function CinePanel({ ctx, onClose }) {
                             'p',
                             { className: 've-cine__meta' },
                             detalle.error
-                              ? `Error: ${detalle.error}`
+                              ? t('cine.error_line', { error: detalle.error })
                               : detalle.terminado
-                                ? `Lista${detalle.segundos ? ` en ${Math.round(detalle.segundos)} s` : ''}`
+                                ? (detalle.segundos ? t('cine.done_in', { seconds: Math.round(detalle.segundos) }) : t('cine.done_line'))
                                 : detalle.corriendo
                                   ? `${detalle.etapa || t('cine.working')} · ${detalle.porcentaje || 0}%`
                                   : t('cine.no_render_yet')
@@ -2437,7 +2503,14 @@ function VideoPane({ ctx, onClose }) {
   const [selId, setSelId] = useState(null)
   const [cursor, setCursor] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [notice, setNotice] = useState('')
+  // El aviso lleva su tono (ok / bad / info) y si es breve: así no hay que adivinarlo
+  // leyendo el texto, que cambia con el idioma.
+  const [noticeState, setNoticeState] = useState({ text: '', tone: 'info', brief: false })
+  const notice = noticeState.text
+  const setNotice = useCallback(
+    (text, tone, options) => setNoticeState({ text: text || '', tone: tone || 'info', brief: !!(options && options.brief) }),
+    []
+  )
   const [chatMsg, setChatMsg] = useState('')
   const [dialog, setDialog] = useState(null)
   const [job, setJob] = useState(null)
@@ -2618,7 +2691,7 @@ function VideoPane({ ctx, onClose }) {
           const first = payload.project.scenes && payload.project.scenes[0]
           setSelId((prev) => ((payload.project.scenes || []).some((s) => s.id === prev) ? prev : first ? first.id : null))
           setSavedAt(Date.now())
-          setNotice(t('notice.project_updated'))
+          setNotice(t('notice.project_updated'), 'ok')
         }
       } catch (error) {
         /* sin conexión: el siguiente tick reintenta */
@@ -2696,9 +2769,9 @@ function VideoPane({ ctx, onClose }) {
   }, [])
   useEffect(() => {
     if (!notice) return undefined
-    const timer = setTimeout(() => setNotice(''), /^Guardado$/.test(notice) ? 2200 : 6000)
+    const timer = setTimeout(() => setNotice(''), noticeState.brief ? 2200 : 6000)
     return () => clearTimeout(timer)
-  }, [notice])
+  }, [noticeState])
   // Con zoom, el cursor se mantiene a la vista mientras reproduces o saltas.
   useEffect(() => {
     const box = tlScrollRef.current
@@ -2740,7 +2813,8 @@ function VideoPane({ ctx, onClose }) {
           setDirty(false)
           setStatus('saved')
           setSavedAt(Date.now())
-          setNotice(options.force ? t('save.saved') : '')
+          if (options.force) setNotice(t('save.saved'), 'ok', { brief: true })
+          else setNotice('')
         }
         return true
       } catch (error) {
@@ -2755,7 +2829,7 @@ function VideoPane({ ctx, onClose }) {
             setMedia(remote.media || [])
             setDirty(true)
             setStatus('idle')
-            setNotice(t('notice.merged'))
+            setNotice(t('notice.merged'), 'ok')
           } catch (mergeError) {
             const theirs = (error.payload && error.payload.current_revision) || '?'
             setDialog({ kind: 'conflict', theirs, mine: current.revision })
@@ -2763,7 +2837,7 @@ function VideoPane({ ctx, onClose }) {
           }
         } else {
           setStatus('failed')
-          setNotice(error.message)
+          setNotice(error.message, 'bad')
         }
         return false
       } finally {
@@ -2938,7 +3012,7 @@ function VideoPane({ ctx, onClose }) {
       fitTransition(draft.scenes, scene)
       return draft
     })
-    setNotice(t('notice.split_done'))
+    setNotice(t('notice.split_done'), 'ok')
   }
 
   const moveScene = (index, delta) => {
@@ -2949,7 +3023,7 @@ function VideoPane({ ctx, onClose }) {
       draft.scenes.splice(target, 0, item)
       return draft
     })
-    setNotice(t('notice.scene_moved', { index: index + 1, target: target + 1 }))
+    setNotice(t('notice.scene_moved', { index: index + 1, target: target + 1 }), 'ok')
   }
 
   const deleteScene = (index) => {
@@ -2960,7 +3034,7 @@ function VideoPane({ ctx, onClose }) {
     })
     const nextScene = doc.scenes[index + 1] || doc.scenes[index - 1] || null
     setSelId(nextScene ? nextScene.id : null)
-    setNotice(t('notice.scene_deleted'))
+    setNotice(t('notice.scene_deleted'), 'ok')
   }
 
   const setTransitionStyle = (style) => {
@@ -3033,7 +3107,7 @@ function VideoPane({ ctx, onClose }) {
       }
       return draft
     })
-    setNotice(t('notice.music_set'))
+    setNotice(t('notice.music_set'), 'ok')
   }
 
   const removeMusic = () => {
@@ -3041,7 +3115,7 @@ function VideoPane({ ctx, onClose }) {
       delete draft.music
       return draft
     })
-    setNotice(t('notice.music_removed'))
+    setNotice(t('notice.music_removed'), 'ok')
   }
 
   // -------------------------------------------------------------- sonidos y voz (audioEvents)
@@ -3065,7 +3139,7 @@ function VideoPane({ ctx, onClose }) {
       if (!draft.audioEvents.length) delete draft.audioEvents
       return draft
     })
-    setNotice(t('notice.sound_removed'))
+    setNotice(t('notice.sound_removed'), 'ok')
   }
 
   const addEventAtCursor = (assetId) => {
@@ -3077,7 +3151,7 @@ function VideoPane({ ctx, onClose }) {
       ]
       return draft
     })
-    setNotice(t('notice.sound_added', { time: fmtTimecode(cursor) }))
+    setNotice(t('notice.sound_added', { time: fmtTimecode(cursor) }), 'ok')
   }
 
   const setNormalize = (value) => {
@@ -3156,7 +3230,7 @@ function VideoPane({ ctx, onClose }) {
       if (scene) delete scene.filters
       return draft
     })
-    setNotice(t('notice.filters_reset'))
+    setNotice(t('notice.filters_reset'), 'ok')
   }
 
   // -------------------------------------------------------------- ken burns / velocidad
@@ -3235,7 +3309,7 @@ function VideoPane({ ctx, onClose }) {
       delete draft.logo
       return draft
     })
-    setNotice(t('notice.logo_removed'))
+    setNotice(t('notice.logo_removed'), 'ok')
   }
 
   const setOrientation = (value) => {
@@ -3418,7 +3492,7 @@ function VideoPane({ ctx, onClose }) {
     try {
       await request(ctx, `/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST', body: {} })
     } catch (error) {
-      setNotice(error.message)
+      setNotice(error.message, 'bad')
     }
   }
 
@@ -3427,7 +3501,7 @@ function VideoPane({ ctx, onClose }) {
   const importFolder = async () => {
     if (!doc) return
     if (!ctx || !ctx.files) {
-      setNotice(t('notice.no_files'))
+      setNotice(t('notice.no_files'), 'bad')
       return
     }
     setImportState({ phase: 'picking' })
@@ -3448,13 +3522,13 @@ function VideoPane({ ctx, onClose }) {
       if (mediaRoot && !within(folder.path, mediaRoot)) {
         setImportState({
           phase: 'error',
-          error: `Esa carpeta no es la que el servicio tiene concedida. Concede y usa: ${mediaRoot}`
+          error: t('import.folder_mismatch', { path: mediaRoot })
         })
         return
       }
       const listing = await ctx.files.list(folder.id, '')
       if (!listing || !listing.ok) {
-        setImportState({ phase: 'error', error: (listing && listing.error) || 'no se pudo listar' })
+        setImportState({ phase: 'error', error: (listing && listing.error) || t('import.list_failed') })
         return
       }
       const allowed = /\.(png|jpe?g|mp4|mov|m4v|mp3|wav)$/i
@@ -3494,7 +3568,7 @@ function VideoPane({ ctx, onClose }) {
     }
     setImportState({ phase: 'result', done, total: chosen.length, failures })
     setPhase('ready')
-    setNotice(done === 1 ? t('notice.media_imported') : t('notice.media_imported_many', { count: done }))
+    setNotice(done === 1 ? t('notice.media_imported') : t('notice.media_imported_many', { count: done }), 'ok')
   }
 
   // -------------------------------------------------------------- teclado
@@ -3628,7 +3702,7 @@ function VideoPane({ ctx, onClose }) {
     setLibOpen(false)
     setRailOpen(false)
     if (!current) {
-      setPicker({ mode, sceneId: sceneId || null, phase: 'error', items: [], error: 'No hay proyecto abierto.' })
+      setPicker({ mode, sceneId: sceneId || null, phase: 'error', items: [], error: t('picker.no_project') })
       return
     }
     setPicker({ mode, sceneId: sceneId || null, phase: 'loading', items: [] })
@@ -3662,7 +3736,7 @@ function VideoPane({ ctx, onClose }) {
       if (scenes.length) setSelId(scenes[scenes.length - 1].id)
       setDialog(null)
       setPicker(null)
-      setNotice(t('notice.media_added', { name: baseName(item.path) }))
+      setNotice(t('notice.media_added', { name: baseName(item.path) }), 'ok')
     } catch (error) {
       setPicker((prev) => (prev ? { ...prev, phase: 'error', error: error.message } : prev))
     }
@@ -3681,7 +3755,7 @@ function VideoPane({ ctx, onClose }) {
     })
     setDialog(null)
     setPicker(null)
-    setNotice(t('notice.media_replaced', { name: baseName(item.path) }))
+    setNotice(t('notice.media_replaced', { name: baseName(item.path) }), 'ok')
   }
 
   // -------------------------------------------------------------- regiones
@@ -3749,7 +3823,7 @@ function VideoPane({ ctx, onClose }) {
               type: 'button',
               className: 've-chip ve-chip--ghost ve-model',
               title: t('header.model_readonly'),
-              'aria-label': `Modelo ${modelName}. Cambia el modelo en el selector del chat`,
+              'aria-label': t('header.model_aria', { model: modelName }),
               onClick: () => {
                 try {
                   if (host && host.composer && typeof host.composer.focus === 'function') host.composer.focus(null)
@@ -3949,7 +4023,7 @@ function VideoPane({ ctx, onClose }) {
                   /* metadatos aún no listos */
                 }
               },
-              'aria-label': `Vista previa de ${currentScene ? currentScene.name : t('preview.this_scene')}`
+              'aria-label': t('preview.aria', { name: currentScene ? currentScene.name : t('preview.this_scene') })
             })
           : null,
           guides ? h('div', { className: 've-guides', 'aria-hidden': 'true' }) : null,
@@ -3996,7 +4070,7 @@ function VideoPane({ ctx, onClose }) {
           value: cursor,
           style: { '--ve-p': `${total ? (cursor / total) * 100 : 0}%` },
           'aria-label': t('transport.position'),
-          'aria-valuetext': `${fmtTimecode(cursor)} de ${fmtTimecode(total)}`,
+          'aria-valuetext': t('transport.position_value', { cursor: fmtTimecode(cursor), total: fmtTimecode(total) }),
           onChange: (event) => setCursor(Number(event.target.value))
         })
       ),
@@ -4156,7 +4230,7 @@ function VideoPane({ ctx, onClose }) {
       draft.scenes.splice(to, 0, item)
       return draft
     })
-    setNotice(t('notice.scene_moved', { index: from + 1, target: to + 1 }))
+    setNotice(t('notice.scene_moved', { index: from + 1, target: to + 1 }), 'ok')
   }
 
   const trimLimits = (scene) => {
@@ -4389,7 +4463,7 @@ function VideoPane({ ctx, onClose }) {
                         h('span', { key: 'r', className: 've-trim ve-trim--r', role: 'presentation', title: t('clip.trim_end') })
                       ]
                     : null,
-                  row.scene.needsRelink ? h(Badge, { tone: 'warn' }, 'falta') : null
+                  row.scene.needsRelink ? h(Badge, { tone: 'warn' }, t('timeline.missing_badge')) : null
                 )
               )
             ),
@@ -4442,7 +4516,7 @@ function VideoPane({ ctx, onClose }) {
                     title: t('scene.audio_aria', { index: rows.indexOf(row) + 1, volume })
                   },
                   h('i', { style: { height: `${Math.max(volume, volume ? 8 : 0)}%` } }),
-                  h('small', null, volume === 0 ? 'mudo' : `${volume} %`)
+                  h('small', null, volume === 0 ? t('timeline.muted') : `${volume} %`)
                 )
               }),
               sfxEvents.length
@@ -4457,8 +4531,8 @@ function VideoPane({ ctx, onClose }) {
                           type: 'button',
                           className: 've-ev',
                           style: { left: `${pct(Number(ev.at) || 0)}%` },
-                          title: `Sonido ${index + 1} · ${fmtTimecode(ev.at)} · volumen ${ev.volume == null ? 100 : ev.volume}%`,
-                          'aria-label': `Sonido ${index + 1} en ${fmtTimecode(ev.at)}`,
+                          title: t('timeline.sound_title', { n: index + 1, time: fmtTimecode(ev.at), volume: ev.volume == null ? 100 : ev.volume }),
+                          'aria-label': t('timeline.sound_aria', { n: index + 1, time: fmtTimecode(ev.at) }),
                           onClick: () => setCursor(clamp(Number(ev.at) || 0, 0, total))
                         },
                         '♪'
@@ -4590,12 +4664,10 @@ function VideoPane({ ctx, onClose }) {
     )
   }
 
-  const toastTone = (text) => (/no se pudo|error|fall[óo]|rechaz|inv[áa]lid|no responde|falta/i.test(text) ? 'bad' : /guardad|importad|a[ñn]adid|reemplazad|combinaron|actualizado|restablecid/i.test(text) ? 'ok' : 'info')
-
   const toasts = () => {
     const busy = job && ['queued', 'running', 'probing', 'rendering', 'validating', 'promoting'].includes(job.state) && !dialog
     if (!notice && !busy) return null
-    const tone = notice ? toastTone(notice) : 'info'
+    const tone = notice ? noticeState.tone : 'info'
     return h(
       'div',
       { className: 've-toasts', role: 'status', 'aria-live': 'polite' },
@@ -5126,7 +5198,7 @@ function VideoPane({ ctx, onClose }) {
         h('dt', null, t('field.scenes_sum')),
         h('dd', null, fmtTime(total)),
         h('dt', null, t('field.final_video')),
-        h('dd', null, `${fmtTime(finalDuration(doc))}${finalDuration(doc) !== total ? ' (las transiciones se solapan)' : ''}`)
+        h('dd', null, `${fmtTime(finalDuration(doc))}${finalDuration(doc) !== total ? t('dialog.transitions_overlap') : ''}`)
       )
     )
 
@@ -5159,13 +5231,13 @@ function VideoPane({ ctx, onClose }) {
             h(
               'label',
               { className: 've-f' },
-              h('span', { className: 've-f__l' }, `Sonido ${index + 1}`),
+              h('span', { className: 've-f__l' }, t('sfx.row', { n: index + 1 })),
               h(
                 'select',
                 {
                   className: 've-select',
                   value: ev.assetId,
-                  'aria-label': `Archivo del sonido ${index + 1}`,
+                  'aria-label': t('sfx.file_aria', { n: index + 1 }),
                   onChange: (event) => setEvent(ev.id, { assetId: event.target.value })
                 },
                 audioAssets.map((item) => h('option', { key: item.id, value: item.id }, baseName(item.path) || item.id))
@@ -5181,7 +5253,7 @@ function VideoPane({ ctx, onClose }) {
                 style: { width: '100%' },
                 defaultValue: fmtTimecode(ev.at),
                 inputMode: 'decimal',
-                'aria-label': `Inicio del sonido ${index + 1}`,
+                'aria-label': t('sfx.start_aria', { n: index + 1 }),
                 onBlur: (event) => commitEventAt(ev.id, event.target.value),
                 onKeyDown: (event) => {
                   if (event.key === 'Enter') event.target.blur()
@@ -5242,7 +5314,7 @@ function VideoPane({ ctx, onClose }) {
                 {
                   className: 've-select',
                   value: music ? music.assetId : '',
-                  'aria-label': 'Música de fondo del proyecto',
+                  'aria-label': t('music.lane_aria'),
                   onChange: (event) => chooseMusic(event.target.value)
                 },
                 h('option', { value: '' }, t('field.no_music')),
@@ -5251,7 +5323,7 @@ function VideoPane({ ctx, onClose }) {
                 )
               ),
               music
-                ? h('span', { className: 've-f__h' }, `Suena de fondo durante ${fmtTime(total)}.`)
+                ? h('span', { className: 've-f__h' }, t('music.plays', { time: fmtTime(total) }))
                 : h('span', { className: 've-f__h' }, t('field.no_music_hint'))
             ),
             music
@@ -5562,7 +5634,7 @@ function VideoPane({ ctx, onClose }) {
       target.text = []
       return draft
     })
-    setNotice(t('notice.scene_reset'))
+    setNotice(t('notice.scene_reset'), 'ok')
   }
 
   function queueLabel() {
@@ -5572,7 +5644,7 @@ function VideoPane({ ctx, onClose }) {
     if (job && job.state === 'failed') return t('export.failed')
     if (!doc) return ''
     const count = (doc.scenes || []).length
-    if (!count) return 'Sin escenas todavía'
+    if (!count) return t('queue.no_scenes')
     const finalLen = finalDuration(doc)
     return count === 1 ? t('queue.count_one', { time: fmtTime(finalLen) }) : t('queue.count_many', { count, time: fmtTime(finalLen) })
   }
@@ -5651,7 +5723,7 @@ function VideoPane({ ctx, onClose }) {
         const ok = await door.writeClipboard(String(text))
         setChatMsg(ok ? t('chat.copied') : t('chat.copy_denied'))
       } catch (error) {
-        setChatMsg(`No se pudo copiar: ${(error && error.message) || error}`)
+        setChatMsg(t('chat.copy_failed', { error: (error && error.message) || error }))
       }
       return
     }
@@ -5667,7 +5739,7 @@ function VideoPane({ ctx, onClose }) {
       await loadProjects()
       await openProject(payload.projectId)
     } catch (error) {
-      setNotice(error.message)
+      setNotice(error.message, 'bad')
     }
   }
 
@@ -5678,10 +5750,10 @@ function VideoPane({ ctx, onClose }) {
     if (!files.length) return
     const allowed = /\.(png|jpe?g|mp4|mov|m4v|mp3|wav)$/i
     const rejected = files.filter((file) => !allowed.test(file.name))
-    if (rejected.length) setNotice(t('notice.format_unsupported', { list: rejected.map((f) => f.name.split('.').pop()).join(', ') }))
+    if (rejected.length) setNotice(t('notice.format_unsupported', { list: rejected.map((f) => f.name.split('.').pop()).join(', ') }), 'bad')
     const usable = files.filter((file) => allowed.test(file.name) && file.path)
     if (!usable.length) {
-      if (!rejected.length) setNotice(t('notice.use_import'))
+      if (!rejected.length) setNotice(t('notice.use_import'), 'bad')
       return
     }
     ;(async () => {
@@ -5696,10 +5768,10 @@ function VideoPane({ ctx, onClose }) {
           setMedia(payload.media || [])
           imported += 1
         } catch (error) {
-          setNotice(error.message)
+          setNotice(error.message, 'bad')
         }
       }
-      setNotice(`${imported} de ${usable.length} archivo(s) importados.`)
+      setNotice(t('notice.imported_partial', { done: imported, total: usable.length }), imported === usable.length ? 'ok' : 'bad')
     })()
   }
 
@@ -5779,7 +5851,7 @@ function VideoPane({ ctx, onClose }) {
                 onChange: (event) => setExportPreset(event.target.value)
               },
               presetOptions.map((item) =>
-                h('option', { key: item.id, value: item.id, disabled: !!item.disabled }, item.disabled ? `${item.label} · no disponible` : item.label)
+                h('option', { key: item.id, value: item.id, disabled: !!item.disabled }, item.disabled ? t('export.preset_unavailable', { label: item.label }) : item.label)
               )
             ),
             presetPicked && presetPicked.disabled
@@ -5865,7 +5937,7 @@ function VideoPane({ ctx, onClose }) {
                       'aria-label': t('export.player_aria')
                     })
                   : null,
-                h('code', { className: 've-out__p' }, (live && live.outputPath) || 'ruta no disponible'),
+                h('code', { className: 've-out__p' }, (live && live.outputPath) || t('export.path_unavailable')),
                 h(
                   'div',
                   { className: 've-out__a' },
@@ -5930,7 +6002,7 @@ function VideoPane({ ctx, onClose }) {
           Dialog,
           {
             title: t('import_media'),
-            body: `${state.entries.length} archivos admitidos · solo se importa lo que marques`,
+            body: t('import.entries_hint', { count: state.entries.length }),
             onClose: () => setDialog(null),
             footer: [
               h(Btn, { key: 'c', variant: 'outline', label: t('common.cancel'), onClick: () => setDialog(null) }),
@@ -5967,7 +6039,7 @@ function VideoPane({ ctx, onClose }) {
         return h(
           Dialog,
           { title: t('import.running'), onClose: () => {}, footer: null },
-          h('div', { className: 've-props', 'aria-live': 'polite' }, h('div', { className: 've-loadrow' }, h(Spinner), `${state.done} de ${state.total}`))
+          h('div', { className: 've-props', 'aria-live': 'polite' }, h('div', { className: 've-loadrow' }, h(Spinner), t('import.progress', { done: state.done, total: state.total })))
         )
       }
       return h(
@@ -5980,7 +6052,7 @@ function VideoPane({ ctx, onClose }) {
         h(
           'p',
           { className: 've-dialog__b' },
-          `${state.done} de ${state.total} importados${state.failures.length ? ` · ${state.failures.length} con error` : ''}`
+          t('import.done_summary', { done: state.done, total: state.total, failed: state.failures.length ? t('import.failed_part', { count: state.failures.length }) : '' })
         ),
         state.failures.length ? h('div', { className: 've-log' }, state.failures.join('\n')) : null
       )

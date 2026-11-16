@@ -146,3 +146,12 @@ class TestTtsSaySinShell:
         )
         assert r.returncode == 0, r.stderr + r.stdout
         assert (proyecto / "audio" / "takes" / "T01_open.wav").is_file()
+
+
+class TestEmparejamientoAntesDeLaPrimeraLlamada:
+    def test_el_pane_pide_el_token_antes_de_llamar(self) -> None:
+        # Una respuesta sin token no lleva cabeceras CORS: desde la app el pane no podía ni
+        # leer su propio 401, así que el emparejamiento «al primer 401» nunca se disparaba.
+        texto = PLUGIN_JS.read_text(encoding="utf-8")
+        assert "const token = await ensureToken(ctx)" in texto
+        assert texto.index("const token = await ensureToken(ctx)") < texto.index("const base = serviceBase(ctx)", texto.index("async function request("))

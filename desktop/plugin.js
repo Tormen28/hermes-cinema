@@ -1461,9 +1461,29 @@ async function pairToken(ctx) {
   }
 }
 
+// A reply without the token carries no CORS headers (the service never lets a foreign page read
+// an unauthenticated answer), so from inside the app a first call without a token cannot even
+// see its own 401. Pair BEFORE the first call instead of waiting for that 401, and do not hammer
+// the RPC when it is unavailable (manual installs carry their token in storage).
+let pairingRun = null
+let pairingEnded = 0
+async function ensureToken(ctx) {
+  const known = serviceToken(ctx)
+  if (known) return known
+  if (!pairingRun) {
+    if (Date.now() - pairingEnded < 4000) return ''
+    pairingRun = pairToken(ctx).finally(() => {
+      pairingRun = null
+      pairingEnded = Date.now()
+    })
+  }
+  // Calls that start together (the pane loads /projects and /health at once) share one pairing.
+  return pairingRun
+}
+
 async function request(ctx, path, { method = 'GET', body, timeout = 30000 } = {}) {
+  const token = await ensureToken(ctx)
   const base = serviceBase(ctx)
-  const token = serviceToken(ctx)
   const headers = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token) headers['X-VE-Token'] = token

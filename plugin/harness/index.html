@@ -57,6 +57,9 @@
 
       const store = new Map()
       if (params.get('open')) store.set('lastProjectId', params.get('open'))
+      // El pane ya no lee window.__VE_SERVICE__: la URL va por ctx.storage y el token llega por
+      // el RPC de emparejamiento (sdk-shim.js), igual que en una instalación del catálogo.
+      store.set('service.url', params.get('svc') || 'http://127.0.0.1:8765')
       // La interfaz es inglesa por defecto; ?lang=es fija el español para los tests.
       const lang = params.get('lang')
       if (lang === 'en' || lang === 'es') store.set('ui.language', lang)

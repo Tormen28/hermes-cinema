@@ -216,6 +216,11 @@ def main(argv: list[str] | None = None) -> int:
         if status != 200:
             raise SystemExit(f"guardar devolvió {status}: {saved}")
 
+    # El pane pide el token por RPC (ver sdk-shim.js); el banco lo sirve desde este archivo.
+    (HERE / "service.json").write_text(
+        json.dumps({"service": base, "token": service_token()}), encoding="utf-8"
+    )
+
     print(json.dumps({
         "service": base,
         "health": health,

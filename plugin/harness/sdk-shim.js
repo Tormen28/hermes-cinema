@@ -25,6 +25,14 @@ export const busyAtom = atom(params.get('busy') === '1')
 export const cwdAtom = atom(params.get('cwd') || 'C:/proyectos/harness')
 
 export const host = {
+  // Imita el RPC del lado agente (plugin.hermes-cinema.pair): el banco lee service.json, que
+  // escribe setup_fixtures.py con el token del servicio de pruebas. No se versiona.
+  request: async (method) => {
+    if (method !== 'plugin.hermes-cinema.pair') throw new Error('rpc desconocido: ' + method)
+    const response = await fetch('./service.json', { cache: 'no-store' })
+    if (!response.ok) throw new Error('falta plugin/harness/service.json: corre setup_fixtures.py')
+    return response.json()
+  },
   navigate: (to) => {
     window.__VE_NAV__ = to
   },

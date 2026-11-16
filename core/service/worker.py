@@ -570,7 +570,7 @@ def _taskkill(pid: int, *, timeout_s: float = 5.0) -> bool:
             [str(taskkill), "/T", "/F", "/PID", str(int(pid))],
             capture_output=True, timeout=timeout_s, check=False,
             env=filtered_env(Path(os.environ.get("TEMP", "."))),
-            creationflags=CREATE_NO_WINDOW,
+            creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     except (OSError, subprocess.SubprocessError):
         return False

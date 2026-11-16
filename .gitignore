@@ -33,3 +33,7 @@ demo/plugin-videos/*/frames/
 /e2e-*.png
 /shot-*.png
 /pane_ui_export.mp4
+
+# Banco de pruebas del pane: copia del bundle y token del servicio de pruebas
+plugin/plugin.js
+plugin/harness/service.json

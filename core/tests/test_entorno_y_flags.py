@@ -33,6 +33,11 @@ class TestCreationFlags:
         assert not sin_condicionar, "generate.py pasa CREATE_NO_WINDOW sin condicionar"
         assert 'creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0' in fuente
 
+    def test_ningun_modulo_del_servicio_pasa_flags_sin_condicionar(self) -> None:
+        for modulo in sorted((RAIZ / "core" / "service").glob("*.py")):
+            fuente = modulo.read_text(encoding="utf-8")
+            assert not re.findall(r"creationflags=CREATE_NO_WINDOW\s*[,)]", fuente), modulo.name
+
 
 class TestEntornoHijo:
     """El servicio y sus nietos no pueden ver las claves de proveedor del perfil."""
